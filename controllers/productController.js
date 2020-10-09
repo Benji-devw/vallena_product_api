@@ -4,7 +4,18 @@ let Product = require('../models/productModel');
 const { stringify } = require('querystring');
 
 
-exports.insertProduct = (req, res, next) => {
+
+
+exports.getProducts = (req, res) => {
+    Product.find().then(data => {
+        return res.status(200).json({
+            message: "Product list Done !",
+            products: data      // Lien => apiCall/Products_Api
+        });
+    }).catch(err => console.log('Get products error :', err))
+}
+
+exports.insertProduct = (req, res) => {
     console.log('reqBody.....', req.body)
     console.log('reqFiles.....', req.files)
 
@@ -20,7 +31,7 @@ exports.insertProduct = (req, res, next) => {
 
     product.save().then(result => {
         res.status(201).json({
-            message: "Done upload!",
+            message: "Insert product Done !",
             productCreated: {
                 _id: result._id,
                 imgCollection: result.imgCollection
@@ -29,12 +40,11 @@ exports.insertProduct = (req, res, next) => {
     }).catch(err => res.status(500).json({ success: false, error: err }))
 }
 
-exports.updateProductById = (req, res, next) => {
+exports.updateProductById = (req, res) => {
     // console.log('reqBody.....', req.body)
     // console.log('RB.imgCollection.....', req.body.imgCollection)
     // console.log('reqFiles.....', req.files.length)
     // console.log('RB.copyCollection...', req.body.copyCollection)
-
 
     if (req.files.length > 0) {     // Si new image depuis React on rentre
         console.log('DIFF')
@@ -49,7 +59,7 @@ exports.updateProductById = (req, res, next) => {
                 for (let i = 0; i < url.length; i++) {
                     let decoup = url[i].split('/')
                     // console.log('decoup', decoup[4])
-                    fs.unlinkSync(`./public/${decoup[4]}`)
+                    fs.unlinkSync(`./public/${decoup[4]}`)      // Sync pour supprimer direct sinon besoin d'une callback pour par example renvoyer une réponse
                 }
             } else {    // sinon une url et donc url.length = entre 0 et 30 carac
                 let decoup = url.split('/')
@@ -73,27 +83,15 @@ exports.updateProductById = (req, res, next) => {
     } : { ...req.body}
 
     Product.updateOne({ _id: req.params.id }, { ...newObj, _id: req.params.id })
-        .then(() => res.status(200).json({ message: "Update Done !"} ))
+        .then(() => res.status(200).json({ message: "Update product Done !"} ))
         .catch(error => res.status(400).json({ error: error }))
-}
-
-
-
-
-exports.getProducts = (req, res, next) => {
-    Product.find().then(data => {
-        return res.status(200).json({
-            message: "Product list retrieved successfully!",
-            products: data      // Lien => apiCall/Products_Api
-        });
-    }).catch(err => console.log('ERR..find()..... ', err))
 }
 
 exports.getProductById = (req, res) => {
     Product.findOne({ _id: req.params.id }, (err, product) => {
-        if (err) { return err => console.log("ERR..findOne().....", err) }
+        if (err) { return err => console.log("Get product error :", err) }
         return res.status(200).json({ 
-            message: "Product : ", 
+            message: "Get product Done !", 
             data: product })        // Lien => apiCall/Products_Api
     }).catch(err => res.status(400).json({ success: false, error: err }))
 }
@@ -104,8 +102,8 @@ exports.deleteProduct = (req, res) => {
             return res.status(400).json({ success: false, error: err })
         }
         if (!product) {
-            return res.status(404).json({ success: false, error: 'Product not found' })
+            return res.status(404).json({ success: false, error: 'Product not found !' })
         }
         return res.status(200).json({ success: true, data: product })
-    }).catch(err => console.log('Delete raté : ', err))
+    }).catch(err => console.log('Delete product error:', err))
 }
