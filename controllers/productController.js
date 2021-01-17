@@ -1,46 +1,20 @@
 const fs = require('fs');
 let Product = require('../models/productModel');
-// const { stringify } = require('querystring');
+// var Buffer = require('buffer/').Buffer
 
-
-
-// class APIfeatures {
-//     constructor(query, queryString) {
-//         this.query = query;
-//         this.queryString = queryString;
-//     }
-//     filtering() {
-//         console.log('this.query', this.query)
-//         // const queryobj = {...this.queryString}
-//         // console.log('queryobj', queryobj)
-//     }
-//     paginating() {
-//         const page = this.queryString.page * 1 || 1;
-//         const limit = this.queryString.limit * 1 || 4;
-//         const skip = (page - 1) * limit;
-//         this.query = this.query.skip(skip).limit(limit)
-//         return this
-//     }
-// }
-// exports.getProducts = async (req, res) => {
-//     const features = new APIfeatures(Product.find(), req.query)
-//     // .filtering();
-//     // .paginating();
-//     const products = await features.query;
-//     res.status(200).json({
-//         message: "Product list Done !",
-//         result: products.length,
-//         products: products      // Lien => apiCall/Products_Api
-//     });     
-// }
 
 
 exports.getProducts = (req, res, next) => {
     Product.find()
         .then(data => {
+
+            // let objJsonStr = JSON.stringify(data);
+            // let objJsonB64 = Buffer.from(objJsonStr).toString("base64");
+
             return res.status(200).json({
                 message: "Product list from getProducts Done !",
-                products: data      // Lien => apiCall/Products_Api
+                products: data,
+                // products: objJsonB64,
             });
         })
         .catch(err => res.status(500).json({
@@ -135,7 +109,6 @@ exports.updateProductById = (req, res, next) => {
 
 
 exports.getProductById = (req, res) => {
-    console.log('UP');
     Product.findOne({ _id: req.params.id }, (err, product) => {
         if (err) { return err => console.log("Get product error :", err) }
         return res.status(200).json({
