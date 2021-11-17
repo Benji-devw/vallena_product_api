@@ -61,20 +61,20 @@ exports.updateProductById = (req, res, next) => {
     // console.log(req.url);
 
 
-    if (req.files.length > 0) {     // Si new image depuis React on rentre
+    if (req.files.length > 0) {
         // console.log('req.files TRUE')
 
-        // Créer un tab pour blouclé sur le JSON de req.body.copyCollection
+
         const urls = []
         const pathFiles = req.body.copyCollection
         urls.push(pathFiles)
 
-        urls.forEach(url => {           // Pour chaque ulrs ds urls[]
-            if (url.length <= 6) {      // Si plusieurs [url] on rentre 
+        urls.forEach(url => {    
+            if (url.length <= 6) {    
                 for (let i = 0; i < url.length; i++) {
                     let decoup = url[i].split('/')
                     // console.log('decoup', decoup[4])
-                    fs.unlinkSync(`./public/${decoup[4]}`)      // Sync pour supprimer direct sinon besoin d'une callback pour par example renvoyer une réponse
+                    fs.unlinkSync(`./public/${decoup[4]}`)
                 }
             } else {    // sinon une url et donc url.length = entre 0 et 30 carac
                 let decoup = url.split('/')
@@ -86,7 +86,7 @@ exports.updateProductById = (req, res, next) => {
 
     const reqFiles = [];
     if (req.files.length > 0) {
-        for (var i = 0; i < req.files.length; i++) {        // Avec FOR on rentre ds req.files et créer les urls
+        for (var i = 0; i < req.files.length; i++) {
             reqFiles.push(`https://vallena.fr/public/${req.files[i].filename}`)
         }
         // reqFiles.push(`http://ec2-15-236-41-246.eu-west-3.compute.amazonaws.com/public/${req.files[i].filename}`)
@@ -126,7 +126,7 @@ exports.deleteProduct = (req, res) => {
         product.imgCollection.forEach(url => {
             let decoup = url.split('/')
             console.log('decoup', decoup[4])
-            fs.unlinkSync(`./public/${decoup[4]}`)      // Sync pour supprimer direct sinon besoin d'une callback pour par example renvoyer une réponse
+            fs.unlinkSync(`./public/${decoup[4]}`)
         })
         Product.findOneAndDelete({ _id: req.params.id }, (err, product) => {
             if (err) {
@@ -188,7 +188,6 @@ exports.getProductsPost = async (req, res) => {
         }
     }
 
-    // console.log('TESTSESTESTE');
     // console.log('sortValue', sortValue);
     // console.log('findArgs', findArgs)
     Product.find(findArgs)

@@ -5,14 +5,14 @@
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "buffer": "^5.7.0",
+    "buffer": "^5.7.1",
     "cors": "^2.8.5",
     "express": "^4.16.4",
-    "helmet": "^4.1.1",
-    "js-base64": "^3.5.2",
-    "mongoose": "^5.7.5",
+    "helmet": "^4.6.0",
+    "js-base64": "^3.6.1",
+    "mongoose": "^5.12.12",
     "multer": "^1.4.2",
-    "uuid": "^8.3.0"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"
