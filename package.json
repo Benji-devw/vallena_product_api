@@ -1,7 +1,12 @@
 {
-  "name": "server",
+  "name": "products",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Vallena_products_api",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node server.js"
+  },
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.0",

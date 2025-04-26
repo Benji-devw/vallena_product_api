@@ -1,15 +1,18 @@
-let express = require('express'),
-   router = express.Router(),
-   multerConf = require('../middleware/multer-config'),
-   productCtrl = require('../controllers/productController');
+let express = require("express"),
+    router = express.Router(),
+    multerConf = require("../middleware/multer-config"),
+    productCtrl = require("../controllers/productController");
 
-// ROUTE 3
+// Route principale des produits
 router.get("/", productCtrl.getProducts);
+
+// Route pour récupérer les catégories
+router.get("/categories", productCtrl.getCategories);
+
+// Routes spécifiques
 router.get("/:id", productCtrl.getProductById);
-//router.post('/insert', multerConf, productCtrl.insertProduct);
-//router.put('/update/:id', multerConf, productCtrl.updateProductById);
-//router.delete("/:id", productCtrl.deleteProduct);
+router.post("/insert", multerConf, productCtrl.insertProduct);
+router.put("/update/:id", multerConf, productCtrl.updateProductById);
+router.delete("/:id", productCtrl.deleteProduct);
 
-router.post("/getproductspost", productCtrl.getProductsPost);
-
-module.exports = router
+module.exports = router;
