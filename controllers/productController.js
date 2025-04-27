@@ -1,82 +1,75 @@
 const fs = require("fs");
-let Product = require("../models/productModel");
+const Product = require("../models/productModel");
 // var Buffer = require('buffer/').Buffer
 
+// Helper function to build search query
+const buildSearchQuery = (query) => {
+    const findArgs = {};
+
+    // Category filter
+    if (query.category && query.category !== "all" && query.category !== "") {
+        findArgs.categoryProduct = query.category;
+    }
+
+    // Matter filter
+    if (query.matter && query.matter !== "all" && query.matter !== "") {
+        findArgs.matter = query.matter;
+    }
+
+    // Color filter
+    if (query.color && query.color !== "all" && query.color !== "") {
+        findArgs.color = query.color;
+    }
+
+    // Price range filter
+    if (query.minPrice || query.maxPrice) {
+        findArgs.priceProduct = {};
+        if (query.minPrice) findArgs.priceProduct.$gte = Number(query.minPrice);
+        if (query.maxPrice) findArgs.priceProduct.$lte = Number(query.maxPrice);
+    }
+
+    // Promotion filter
+    if (query.promotion === "true") {
+        findArgs.promotionProduct = true;
+    }
+
+    // Novelty filter
+    if (query.novelty === "true") {
+        findArgs.novelty = true;
+    }
+
+    // Search filter
+    if (query.search) {
+        findArgs.$or = [
+            { titleProduct: { $regex: query.search, $options: "i" } },
+            { descriptionProduct: { $regex: query.search, $options: "i" } },
+            { categoryProduct: { $regex: query.search, $options: "i" } },
+        ];
+    }
+
+    return findArgs;
+};
+
+// Get all products with filters
 exports.getProducts = async (req, res) => {
     try {
-        console.log("🔍 req.query", req.query);
-
-        // Critères de recherche
-        const findArgs = {};
         const query = req.query;
-
-        // Filtre par catégorie
-        if (
-            query.category &&
-            query.category !== "all" &&
-            query.category !== ""
-        ) {
-            findArgs.categoryProduct = query.category;
-        }
-
-        // Filtre par prix
-        if (query.minPrice) {
-            findArgs.priceProduct = { $gte: Number(query.minPrice) };
-        }
-        if (query.maxPrice) {
-            findArgs.priceProduct = {
-                ...findArgs.priceProduct,
-                $lte: Number(query.maxPrice),
-            };
-        }
-
-        // Filtre par promotion
-        if (query.promotion === "true") {
-            findArgs.promotionProduct = true;
-        }
-
-        // Filtre par nouveauté
-        if (query.novelty === "true") {
-            findArgs.novelty = true;
-        }
-
-        // Filtre par recherche
-        if (query.search) {
-            findArgs.$or = [
-                { titleProduct: { $regex: query.search, $options: "i" } },
-                { descriptionProduct: { $regex: query.search, $options: "i" } },
-                { categoryProduct: { $regex: query.search, $options: "i" } },
-            ];
-        }
-
-        // Configuration du tri
-        let sortConfig = {};
-        if (query.promotion === "true") {
-            sortConfig = { promotionProduct: -1, priceProduct: 1 };
-        } else if (query.novelty === "true") {
-            sortConfig = { novelty: -1, createdAt: -1 };
-        } else if (query.sort === "price") {
-            sortConfig = { priceProduct: query.order === "desc" ? -1 : 1 };
-        } else {
-            sortConfig = { createdAt: -1 }; // Par défaut
-        }
+        const findArgs = buildSearchQuery(query);
 
         // Pagination
         const page = parseInt(query.page) || 1;
-        const limit = parseInt(query.limit) || 12;
+        const limit = parseInt(query.limit) || 3;
         const skip = (page - 1) * limit;
 
-        // Exécution de la requête
+        // Execute query
         const products = await Product.find(findArgs)
-            .sort(sortConfig)
             .skip(skip)
             .limit(limit)
             .lean();
 
-        // Compte total pour la pagination
+        // Get total count for pagination
         const total = await Product.countDocuments(findArgs);
 
-        console.log("✅ Product list returned !");
         return res.status(200).json({
             success: true,
             message: "Product list retrieved successfully",
@@ -89,7 +82,7 @@ exports.getProducts = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("❌ Error fetching products:", error);
+        console.error("Error fetching products:", error);
         return res.status(500).json({
             success: false,
             message: "Products Not Found",
@@ -98,141 +91,222 @@ exports.getProducts = async (req, res) => {
     }
 };
 
-exports.getProductById = (req, res) => {
-    Product.findOne({ _id: req.params.id }, (err, product) => {
-        if (err) {
-            return (err) => console.log("Get product error :", err);
+// Get product by ID
+exports.getProductById = async (req, res) => {
+    try {
+        const product = await Product.findOne({ _id: req.params.id });
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
         }
         return res.status(200).json({
-            message: "Get product Done !",
-            data: product,
-        }); // Lien => apiCall/Products_Api
-    }).catch((err) => res.status(400).json({ success: false, error: err }));
-};
-
-exports.insertProduct = (req, res, next) => {
-    // console.log('reqBody.....', req.body)
-    // console.log('reqFiles.....', req.files)
-
-    const reqFiles = [];
-    for (var i = 0; i < req.files.length; i++) {
-        reqFiles.push(`https://vallena.fr/public/${req.files[i].filename}`);
-    }
-    // reqFiles.push(`${req.protocol}://${req.get('host')}/public/${req.files[i].filename}`)
-
-    const product = new Product({
-        ...req.body,
-        imgCollection: reqFiles,
-    });
-
-    product
-        .save()
-        .then((result) => {
-            console.log("✅ Product inserted !");
-            res.status(201).json({
-                message: "Insert product Done !",
-                productCreated: {
-                    _id: result._id,
-                    imgCollection: result.imgCollection,
-                },
-            });
-        })
-        .catch((err) => res.status(500).json({ success: false, error: err }));
-};
-
-exports.updateProductById = (req, res, next) => {
-    if (req.files.length > 0) {
-        const urls = [];
-        const pathFiles = req.body.copyCollection;
-        urls.push(pathFiles);
-
-        urls.forEach((url) => {
-            if (url.length <= 6) {
-                for (let i = 0; i < url.length; i++) {
-                    let decoup = url[i].split("/");
-                    // console.log('decoup', decoup[4])
-                    fs.unlinkSync(`./public/${decoup[4]}`);
-                }
-            } else {
-                // sinon une url et donc url.length = entre 0 et 30 carac
-                let decoup = url.split("/");
-                // console.log('decoup', decoup[4])
-                fs.unlinkSync(`./public/${decoup[4]}`);
-            }
+            success: true,
+            message: "Product retrieved successfully",
+            data: product
         });
-    }
-
-    const reqFiles = [];
-    if (req.files.length > 0) {
-        for (var i = 0; i < req.files.length; i++) {
-            reqFiles.push(`https://vallena.fr/public/${req.files[i].filename}`);
-        }
-        // reqFiles.push(`http://ec2-15-236-41-246.eu-west-3.compute.amazonaws.com/public/${req.files[i].filename}`)
-        // For Local
-        // reqFiles.push(`${req.protocol}://${req.get('host')}/public/${req.files[i].filename}`)
-    }
-
-    const newObj =
-        req.files.length > 0
-            ? {
-                  ...req.body,
-                  imgCollection: reqFiles,
-              }
-            : { ...req.body };
-
-    Product.updateOne({ _id: req.params.id }, { ...newObj, _id: req.params.id })
-        .then(() => res.status(200).json({ message: "Update product Done !" }))
-        .catch((error) => res.status(400).json({ error: error }));
-};
-
-exports.deleteProduct = (req, res) => {
-    // console.log('req', req.params.id)
-
-    Product.findOne({ _id: req.params.id }, (err, product) => {
-        if (err) {
-            return (err) => console.log("Get product error :", err);
-        }
-        product.imgCollection.forEach((url) => {
-            let decoup = url.split("/");
-            console.log("decoup", decoup[4]);
-            fs.unlinkSync(`./public/${decoup[4]}`);
-        });
-        Product.findOneAndDelete({ _id: req.params.id }, (err, product) => {
-            if (err) {
-                return res.status(400).json({ success: false, error: err });
-            }
-            if (!product) {
-                return res
-                    .status(404)
-                    .json({ success: false, error: "Delete echec !" });
-            }
-            return res
-                .status(200)
-                .json({ success: true, message: "Delete OK !" });
-        }).catch((err) => console.log("Delete product error:", err));
-    });
-};
-
-exports.getCategories = async (req, res) => {
-    try {
-        // Récupérer les catégories uniques
-        const categories = await Product.distinct('categoryProduct');
-        
-        // Formater les catégories pour correspondre à l'interface attendue
-        const formattedCategories = categories
-            .filter(category => category) // Filtrer les valeurs null/undefined/empty
-            .map(category => ({
-                id: category,
-                name: category
-            }));
-
-        console.log("✅ Categories list returned !");
-        return res.status(200).json(formattedCategories);
     } catch (error) {
-        console.error("❌ Error fetching categories:", error);
+        console.error("Error fetching product:", error);
         return res.status(500).json({
             success: false,
-            message: "Categories Not Found",
+            message: "Error retrieving product",
+            error: error.message
+        });
+    }
+};
+
+// Create new product
+exports.insertProduct = async (req, res) => {
+    try {
+        const reqFiles = req.files.map(file => 
+            `https://vallena.fr/public/${file.filename}`
+        );
+
+        const product = new Product({
+            ...req.body,
+            imgCollection: reqFiles,
+        });
+
+        const result = await product.save();
+        
+        return res.status(201).json({
+            success: true,
+            message: "Product created successfully",
+            productCreated: {
+                _id: result._id,
+                imgCollection: result.imgCollection,
+            },
+        });
+    } catch (error) {
+        console.error("Error creating product:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error creating product",
+            error: error.message
+        });
+    }
+};
+
+// Update product
+exports.updateProductById = async (req, res) => {
+    try {
+        // Handle file deletion if new files are uploaded
+        if (req.files.length > 0 && req.body.copyCollection) {
+            const urls = Array.isArray(req.body.copyCollection) 
+                ? req.body.copyCollection 
+                : [req.body.copyCollection];
+
+            urls.forEach(url => {
+                const filename = url.split("/").pop();
+                if (filename) {
+                    fs.unlinkSync(`./public/${filename}`);
+                }
+            });
+        }
+
+        // Prepare new files array
+        const reqFiles = req.files.map(file => 
+            `https://vallena.fr/public/${file.filename}`
+        );
+
+        // Prepare update object
+        const updateObj = req.files.length > 0
+            ? { ...req.body, imgCollection: reqFiles }
+            : req.body;
+
+        const result = await Product.updateOne(
+            { _id: req.params.id },
+            { ...updateObj, _id: req.params.id }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Product updated successfully"
+        });
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error updating product",
+            error: error.message
+        });
+    }
+};
+
+// Delete product
+exports.deleteProduct = async (req, res) => {
+    try {
+        const product = await Product.findOne({ _id: req.params.id });
+        
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        // Delete associated files
+        product.imgCollection.forEach(url => {
+            const filename = url.split("/").pop();
+            if (filename) {
+                fs.unlinkSync(`./public/${filename}`);
+            }
+        });
+
+        await Product.findOneAndDelete({ _id: req.params.id });
+
+        return res.status(200).json({
+            success: true,
+            message: "Product deleted successfully"
+        });
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error deleting product",
+            error: error.message
+        });
+    }
+};
+
+// Get all categories
+exports.getCategories = async (req, res) => {
+    try {
+        const categories = await Product.distinct("categoryProduct");
+        const formattedCategories = categories
+            .filter(category => category)
+            .map(category => ({
+                id: category,
+                name: category,
+            }));
+
+        return res.status(200).json(formattedCategories);
+    } catch (error) {
+        console.error("Error fetching categories:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching categories",
+            error: error.message
+        });
+    }
+};
+
+// Get all matters
+exports.getMatters = async (req, res) => {
+    try {
+        const matters = await Product.distinct("matter");
+        const formattedMatters = matters
+            .filter(matter => matter)
+            .map(matter => ({
+                id: matter,
+                name: matter,
+            }));
+
+        return res.status(200).json(formattedMatters);
+    } catch (error) {
+        console.error("Error fetching matters:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching matters",
+            error: error.message
+        });
+    }
+};
+
+// Get all colors
+exports.getColors = async (req, res) => {
+    try {
+        const colors = await Product.distinct("color");
+        const processedColors = colors
+            .filter(color => color)
+            .flatMap(color => 
+                color.split(',')
+                    .map(c => c.trim().toLowerCase())
+                    .filter(c => c)
+            )
+            .filter((color, index, self) => 
+                index === self.findIndex(c => c === color)
+            )
+            .sort((a, b) => a.localeCompare(b))
+            .map(color => ({
+                id: color,
+                name: color.charAt(0).toUpperCase() + color.slice(1)
+            }));
+
+        return res.status(200).json(processedColors);
+    } catch (error) {
+        console.error("Error fetching colors:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching colors",
             error: error.message
         });
     }
