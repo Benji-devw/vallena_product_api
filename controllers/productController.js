@@ -52,34 +52,24 @@ const buildSearchQuery = (query) => {
 
 // Get all products with filters
 exports.getProducts = async (req, res) => {
+    console.log("getProducts", req.query);
     try {
         const query = req.query;
         const findArgs = buildSearchQuery(query);
 
-        // Pagination
-        const page = parseInt(query.page) || 1;
-        const limit = parseInt(query.limit) || 3;
-        const skip = (page - 1) * limit;
+        // Limit
+        const limit = parseInt(query.limit) || 6;
 
         // Execute query
         const products = await Product.find(findArgs)
-            .skip(skip)
             .limit(limit)
             .lean();
 
-        // Get total count for pagination
-        const total = await Product.countDocuments(findArgs);
-
+        // Return products
         return res.status(200).json({
             success: true,
             message: "Product list retrieved successfully",
             products,
-            pagination: {
-                total,
-                page,
-                pages: Math.ceil(total / limit),
-                hasMore: page * limit < total,
-            },
         });
     } catch (error) {
         console.error("Error fetching products:", error);

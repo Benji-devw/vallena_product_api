@@ -10,7 +10,7 @@ exports.getComments = async (req, res) => {
 };
 
 exports.getCommentsByProduct = async (req, res) => {
-    console.log('getCommentsByProduct', req.params.idProduct);
+    // console.log('getCommentsByProduct', req.params.idProduct);
     await Comment.find({ idProduct: req.params.idProduct }, (err, comments) => {
         if (err) {
             return res.status(400).json({ success: false, error: err });
@@ -20,7 +20,7 @@ exports.getCommentsByProduct = async (req, res) => {
 };
 
 exports.getCommentsRating = async (req, res) => {
-    console.log('getCommentsRating', req.params.idProduct);
+    // console.log('getCommentsRating', req.params.idProduct);
     try {
         const comments = await Comment.find({ idProduct: req.params.idProduct });
         const notes = comments.map(comment => parseInt(comment.note)).filter(note => !isNaN(note));
