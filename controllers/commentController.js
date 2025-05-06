@@ -1,5 +1,36 @@
 let Comment = require("../models/commentModel");
 
+exports.getComments = async (req, res) => {
+    await Comment.find({}, (err, comments) => {
+        if (err) {
+            return res.status(400).json({ success: false, error: err });
+        }
+        return res.status(200).json({ success: true, data: comments || [] });
+    }).catch((err) => console.log(err));
+};
+
+exports.getCommentsByProduct = async (req, res) => {
+    console.log('getCommentsByProduct', req.params.idProduct);
+    await Comment.find({ idProduct: req.params.idProduct }, (err, comments) => {
+        if (err) {
+            return res.status(400).json({ success: false, error: err });
+        }
+        return res.status(200).json({ success: true, data: comments || [] });
+    }).catch((err) => console.log(err));
+};
+
+exports.getCommentsRating = async (req, res) => {
+    console.log('getCommentsRating', req.params.idProduct);
+    try {
+        const comments = await Comment.find({ idProduct: req.params.idProduct });
+        const notes = comments.map(comment => parseInt(comment.note)).filter(note => !isNaN(note));
+        return res.status(200).json({ success: true, data: notes });
+    } catch (err) {
+        console.error('Erreur lors de la récupération des notes:', err);
+        return res.status(400).json({ success: false, error: err });
+    }
+};
+
 exports.postComment = (req, res, next) => {
     const body = req.body;
 
@@ -33,20 +64,6 @@ exports.postComment = (req, res, next) => {
                 message: "comment not created!",
             });
         });
-};
-
-exports.getComments = async (req, res) => {
-    await Comment.find({}, (err, comments) => {
-        if (err) {
-            return res.status(400).json({ success: false, error: err });
-        }
-        if (!comments.length) {
-            return res
-                .status(404)
-                .json({ success: false, error: `order not found` });
-        }
-        return res.status(200).json({ success: true, data: comments });
-    }).catch((err) => console.log(err));
 };
 
 exports.updateComment = async (req, res) => {
