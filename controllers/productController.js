@@ -60,8 +60,38 @@ exports.getProducts = async (req, res) => {
         // Limit
         const limit = parseInt(query.limit) || 6;
 
+        // Sort
+        let sortArgs = {};
+        if (query.sort) {
+            switch (query.sort) {
+                case 'price-asc':
+                    sortArgs = { priceProduct: 1 };
+                    break;
+                case 'price-desc':
+                    sortArgs = { priceProduct: -1 };
+                    break;
+                case 'promotions':
+                    // Trie d'abord par promotionProduct (true en premier), puis par date de création
+                    sortArgs = { promotionProduct: -1, createdAt: -1 }; 
+                    break;
+                case 'nouveautes':
+                    // Trie d'abord par novelty (true en premier), puis par date de création
+                    sortArgs = { novelty: -1, createdAt: -1 }; 
+                    break;
+                default:
+                    // Par défaut, on pourrait trier par date de création la plus récente
+                    sortArgs = { createdAt: -1 }; 
+            }
+        }
+
+        // filter by minPrice and maxPrice
+        if (query.minPrice && query.maxPrice) {
+            findArgs.priceProduct = { $gte: Number(query.minPrice), $lte: Number(query.maxPrice) };
+        }
+
         // Execute query
         const products = await Product.find(findArgs)
+            .sort(sortArgs)
             .limit(limit)
             .lean();
 
