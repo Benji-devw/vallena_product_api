@@ -95,11 +95,15 @@ exports.getProducts = async (req, res) => {
             .limit(limit)
             .lean();
 
+        // Get total count without limit
+        const total = await Product.countDocuments(findArgs);
+
         // Return products
         return res.status(200).json({
             success: true,
             message: "Product list retrieved successfully",
             products,
+            total
         });
     } catch (error) {
         console.error("Error fetching products:", error);
