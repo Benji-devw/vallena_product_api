@@ -8,20 +8,20 @@ const buildSearchQuery = (query) => {
 
     // Category filter
     if (query.category && query.category !== "all" && query.category !== "") {
-        findArgs.categoryProduct = query.category;
+        findArgs.categoryProduct = query.category.toLowerCase();
     }
 
     // Matter filter
     if (query.matter && query.matter !== "all" && query.matter !== "") {
-        findArgs.matter = query.matter;
+        findArgs.matter = query.matter.toLowerCase();
     }
 
     // Color filter
     if (query.color && query.color !== "all" && query.color !== "") {
-        findArgs.color = query.color;
+        findArgs.color = query.color.toLowerCase();
     }
 
-    // Price range filter
+    // Price range filter²
     if (query.minPrice || query.maxPrice) {
         findArgs.priceProduct = {};
         if (query.minPrice) findArgs.priceProduct.$gte = Number(query.minPrice);
